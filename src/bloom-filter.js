@@ -49,7 +49,6 @@ module.exports = class BloomFilter {
     return hash % this.size;
   }
 
-  // New Hash Function
   hash3(item) {
     let hash = item.split("").reduce((a, b) => { a=((a<<5)-a)+b.charCodeAt(0); return a&a }, 0);  
     return Math.abs(hash) % this.size;
