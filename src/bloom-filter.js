@@ -8,13 +8,13 @@ module.exports = class BloomFilter {
 
   insert(item) {
     const hashValues = this.getHashValues(item);
-    hashValues.forEach(val => this.storage.setValue(val));
+    hashValues.forEach(val => this.storage[val] = true);
   }
 
   mayContain(item) {
     const hashValues = this.getHashValues(item);
     for (let i = 0; i < hashValues.length; i++) {
-      if (!this.storage.getValue(hashValues[i])) {
+      if (!this.storage[hashValues[i]]) {
         return false;
       }
     }
@@ -22,55 +22,40 @@ module.exports = class BloomFilter {
   }
 
   createStore(size) {
-    const storage = [];
+    let storage = [];
     for (let i = 0; i < size; i++) {
       storage.push(false);
     }
-    return {
-      getValue: function(index) {
-        return storage[index];
-      },
-      setValue: function(index) {
-        storage[index] = true;
-      }
-    };
+    return storage;
   }
 
   hash1(item) {
     let hash = 0;
     for (let i = 0; i < item.length; i++) {
-      let char = item.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash &= hash;
+      hash = (hash << 5) + hash + item.charCodeAt(i);
+      hash = hash & hash;
+      hash = Math.abs(hash);
     }
-    return Math.abs(hash % this.size);
+    return hash % this.size;
   }
 
   hash2(item) {
     let hash = 5381;
     for (let i = 0; i < item.length; i++) {
-      let char = item.charCodeAt(i);
-      hash = ((hash << 5) + hash) + char * char; // Изменено здесь
-      hash &= hash;
+      hash = ((hash << 5) + hash) + item.charCodeAt(i);
+      hash = hash & hash;
+      hash = Math.abs(hash);
     }
-    return Math.abs(hash % this.size);
+    return hash % this.size;
   }
 
+  // New Hash Function
   hash3(item) {
-    let hash = 0;
-    for (let i = 0; i < item.length; i++) {
-      let char = item.charCodeAt(i);
-      if (i % 2 === 0) {
-        hash = ((hash << 5) - hash) + char * char; // Изменено здесь
-      } else {
-        hash = ((hash << 5) + hash) + char * char; // Изменено здесь
-      }
-      hash &= hash;
-    }
-    return Math.abs(hash % this.size);
+    let hash = item.split("").reduce((a, b) => { a=((a<<5)-a)+b.charCodeAt(0); return a&a }, 0);  
+    return Math.abs(hash) % this.size;
   }
 
   getHashValues(item) {
     return [this.hash1(item), this.hash2(item), this.hash3(item)];
   }
-}
+};
